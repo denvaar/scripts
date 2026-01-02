@@ -1,6 +1,22 @@
 #!/bin/sh
 
-BRANCHES=$(git branch | grep -E -v "(main|\*)" | sed 's/^  //' | tr '\n' ' ')
+exclude_branches="master|main"
+
+while [ "$1" != "" ]; do
+    case "$1" in
+        --not)
+            exclude_branches="$exclude_branches|$2"
+            shift
+            ;;
+        *)
+            echo "Error: Unknown option $1"
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+BRANCHES=$(git branch | grep -E -v "($exclude_branches\*)" | sed 's/^+* * //' | tr '\n' ' ')
 
 if [[ -z "$BRANCHES" ]]
 then
@@ -14,5 +30,5 @@ read -p "Delete these branches [Yy/Nn] ? " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    echo "$BRANCHES" | xargs git branch -D
+    echo "$BRANCHES" | tr ' ' '\0' | xargs -0 -I {} git branch -D {}
 fi
